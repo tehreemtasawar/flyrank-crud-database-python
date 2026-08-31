@@ -1,10 +1,10 @@
 # Task API
 
-A lightweight CRUD API for managing a to-do list, built with Python and FastAPI. This project was built as part of FlyRank AI's Backend Engineering internship (Week 2, Assignment 1), and covers the full create-read-update-delete cycle with proper validation and status codes.
+A lightweight CRUD API for managing a to-do list, built with Python and FastAPI. This project was built as part of FlyRank AI's Backend Engineering internship (Week 2, Assignment 1), and covers the full create-read-update-delete cycle with proper validation and status codes.It was later extended in Week 3 to use a real SQLite database instead of in-memory storage.
 
 ## Features
 
-- Full CRUD operations on an in-memory task list
+- Full CRUD operations on tasks, stored in a SQLite database
 - Input validation with clear error responses
 - Interactive API documentation via Swagger UI
 - Tested through both curl and Swagger UI
@@ -21,7 +21,7 @@ Requirements: Python 3.10+
 
    uvicorn main:app --reload
 
-3. The API will be available at http://localhost:8000
+3. The API will be available at http://localhost:80004. On first run, a `tasks.db` file is created automatically, with 3 example tasks
 
 ## Endpoints
 
@@ -50,13 +50,27 @@ FastAPI automatically generates interactive documentation at /docs, where every 
 
 ![Swagger UI](swagger-screenshot.png)
 
-## Data Storage
+## Database
 
-Tasks are stored in memory, in a Python list, with no database involved. This means all data resets whenever the server restarts. This was confirmed during testing, tasks created earlier in the session disappeared after the server auto-restarted from a code change.
+This project uses SQLite instead of an in-memory list, so task data survives server restarts.
+
+**Why SQLite:** It requires no separate database server or installation, just a single file, making it ideal for a small project like this while still using real SQL, and it comes built into Python's standard library.
+
+**Database file:** `tasks.db`, created automatically in the project folder the first time the app runs. The table is also created automatically if it doesn't exist, and 3 example tasks are inserted only if the table is empty.
+
+**Example query, run directly in DB Browser for SQLite:**
+
+    SELECT * FROM tasks WHERE done = 1;
+
+![Database Viewer](database-screenshot.png)
+
+## Data Persistence
+
+Unlike the earlier in-memory version of this project, task data now survives server restarts, since it is stored in `tasks.db` rather than a Python list. Restarting the server no longer clears existing tasks; the 3 example tasks are only inserted on the very first run, when the table is empty.
 
 ## What I Learned
 
-Building this project deepened my understanding of the full CRUD cycle, how a server handles reading, creating, updating, and deleting data, and how status codes (200, 201, 204, 400, 404) communicate outcomes clearly. I also learned how Pydantic models handle validation, and how path parameters allow a single route to serve many different resources.
+Building this project deepened my understanding of the full CRUD cycle, how a server handles reading, creating, updating, and deleting data, and how status codes (200, 201, 204, 400, 404) communicate outcomes clearly. I also learned how Pydantic models handle validation, and how path parameters allow a single route to serve many different resources.Extending it with SQLite taught me how an API layer and a data layer are genuinely separate, changes made directly in the database, completely outside my Python code, were immediately reflected through the API. I also learned how to write basic SQL queries (SELECT, INSERT, UPDATE, DELETE) and use parameterized queries to insert data safely.
 
 ## AI vs Me
 
