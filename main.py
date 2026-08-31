@@ -32,12 +32,6 @@ def init_db():
 
 init_db()
 
-tasks = [
-    {"id": 1, "title": "Buy groceries", "done": False},
-    {"id": 2, "title": "Clean the Room", "done": False},
-    {"id": 3, "title": "Complete assignment", "done": True}
-]
-
 @app.get("/", summary="API info")
 def root():
     return {
@@ -94,25 +88,35 @@ class UpdateTask(BaseModel):
 
 @app.put("/tasks/{task_id}", summary="Update a task")
 def update_task(task_id: int, updates: UpdateTask):
-    for task in tasks:
-        if task["id"] == task_id:
-            if updates.title is not None:
-                task["title"] = updates.title
-            if updates.done is not None:
-                task["done"] = updates.done
-            return task
-    return JSONResponse(
-        status_code=404,
-        content={"error": f"Task {task_id} not found"}
+    conn = get_connection()
+    row = conn.execute("SELECT id, title, done FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    if row is None:
+        conn.close()
+        return JSONResponse(
+            status_code=404,
+            content={"error": "Task not found"}
+        )
+    new_title = updates.title if updates.title is not None else row[1]
+    new_done = updates.done if updates.done is not None else bool(row[2])
+    conn.execute(
+        "UPDATE tasks SET title = ?, done = ? WHERE id = ?",
+        (new_title, new_done, task_id)
     )
+    conn.commit()
+    conn.close()
+    return {"id": task_id, "title": new_title, "done": new_done}
 
 @app.delete("/tasks/{task_id}", summary="Delete a task")
 def delete_task(task_id: int):
-    for task in tasks:
-        if task["id"] == task_id:
-            tasks.remove(task)
-            return JSONResponse(status_code=204, content=None)
-    return JSONResponse(
-        status_code=404,
-        content={"error": f"Task {task_id} not found"}
-    )
+    conn = get_connection()
+    row = conn.execute("SELECT id FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    if row is None:
+        conn.close()
+        return JSONResponse(
+            status_code=404,
+            content={"error": "Task not found"}
+        )
+    conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    conn.commit()
+    conn.close()
+    return JSONResponse(status_code=204, content=None)
