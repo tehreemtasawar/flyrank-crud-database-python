@@ -77,9 +77,15 @@ def create_task(new_task: CreateTask):
             status_code=400,
             content={"error": "Title is required"}
         )
-    next_task = max(task["id"] for task in tasks) + 1
-    task = {"id": next_task, "title": new_task.title, "done": False}
-    tasks.append(task)
+    conn = get_connection()
+    cursor = conn.execute(
+        "INSERT INTO tasks (title, done) VALUES (?, ?)",
+        (new_task.title, False)
+    )
+    new_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    task = {"id": new_id, "title": new_task.title, "done": False}
     return JSONResponse(status_code=201, content=task)
 
 class UpdateTask(BaseModel):
