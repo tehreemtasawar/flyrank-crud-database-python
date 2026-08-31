@@ -52,17 +52,23 @@ def health():
 
 @app.get("/tasks", summary="List all tasks")
 def get_tasks():
-    return tasks
+    conn = get_connection()
+    rows = conn.execute("SELECT id, title, done FROM tasks").fetchall()
+    conn.close()
+    result = [{"id": row[0], "title": row[1], "done": bool(row[2])} for row in rows]
+    return result
 
 @app.get("/tasks/{task_id}", summary="Get a single task")
 def get_one_task(task_id: int):
-    for task in tasks:
-        if task["id"] == task_id:
-            return task
-    return JSONResponse(
-        status_code=404,
-        content={"error": f"Task {task_id} not found"}
-    )
+    conn = get_connection()
+    row = conn.execute("SELECT id, title, done FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    conn.close()
+    if row is None:
+        return JSONResponse(
+            status_code=404,
+            content={"error": "Task not found"}
+        )
+    return {"id": row[0], "title": row[1], "done": bool(row[2])}
 
 @app.post("/tasks", summary="Create a new task")
 def create_task(new_task: CreateTask):
